@@ -2,17 +2,18 @@ name: Build DSH Go APK (debug arm64)
 
 # Self-hosted fork build: manual trigger only.
 # Debug flavor skips the bundled proot runtime, so this is much lighter than a release build.
+# The APK is also published to a rolling release so it can be downloaded fast.
 
 on:
   workflow_dispatch:
     inputs:
       build_name:
-        description: 'Version name, e.g. 1.1.0-codex.1'
+        description: 'Version name, e.g. 1.1.0-aiwo.1'
         required: false
-        default: '1.1.0-codex.1'
+        default: '1.1.0-aiwo.1'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   apk:
@@ -48,12 +49,13 @@ jobs:
             --target-platform android-arm64 \
             --build-name "${{ inputs.build_name }}"
 
-      - name: List output
-        run: ls -lh app/build/app/outputs/flutter-apk/
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dsh-go-debug-arm64
-          path: app/build/app/outputs/flutter-apk/app-arm64-debug.apk
-          if-no-files-found: error
-          retention-days: 14
+      - name: Publish to rolling release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=aiwo-latest
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "AIwo build" --notes "Automatic build of the AIwo fork." --latest=false
+          cp app/build/app/outputs/flutter-apk/app-arm64-debug.apk "aiwo-${{ inputs.build_name }}-arm64.apk"
+          gh release upload "$TAG" "aiwo-${{ inputs.build_name }}-arm64.apk" --clobber
+          echo "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/aiwo-${{ inputs.build_name }}-arm64.apk"
