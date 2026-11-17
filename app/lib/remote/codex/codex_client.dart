@@ -71,4 +71,93 @@ class CodexClient {
     };
     return CodexThread.parseList(await _call('thread/list', params));
   }
+
+  /// One page of a thread's history, oldest first.
+  ///
+  /// The Host answers `dsh/sessionHistory` with a bounded page of DSH-shaped
+  /// records (`header`, `cursor`, `nextTurn`, `records`, `hasMore`). The exact
+  /// event payloads are the Host's projection of Codex turns, so the text is
+  /// pulled tolerantly instead of pinning one shape that would break on the
+  /// next Host version.
+  Future<CodexHistory> readHistory(String threadId, {int maxMessages = 60}) async {
+    final result = await _call('dsh/sessionHistory', <String, Object?>{
+      'threadId': threadId,
+      'maxMessages': maxMessages,
+    });
+    return CodexHistory.parse(result);
+  }
+}
+
+/// One readable line of a thread.
+class CodexMessage {
+  const CodexMessage({required this.fromUser, required this.text});
+
+  final bool fromUser;
+  final String text;
+}
+
+/// A page of thread history with the paging hints the Host returned.
+class CodexHistory {
+  const CodexHistory({required this.messages, required this.hasMore, this.cursor, this.activeTurnId});
+
+  final List<CodexMessage> messages;
+  final bool hasMore;
+  final int? cursor;
+  final String? activeTurnId;
+
+  static CodexHistory parse(Object? result) {
+    if (result is! Map) return const CodexHistory(messages: <CodexMessage>[], hasMore: false);
+    final records = result['records'];
+    final messages = <CodexMessage>[];
+    if (records is List) {
+      for (final record in records) {
+        final message = _messageOf(record);
+        if (message != null) messages.add(message);
+      }
+    }
+    final cursor = result['cursor'];
+    final activeTurnId = result['activeTurnId'];
+    return CodexHistory(
+      messages: messages,
+      hasMore: result['hasMore'] == true,
+      cursor: cursor is num ? cursor.toInt() : null,
+      activeTurnId: activeTurnId is String ? activeTurnId : null,
+    );
+  }
+
+  static CodexMessage? _messageOf(Object? record) {
+    if (record is! Map) return null;
+    final event = record['event'];
+    if (event is! Map) return null;
+    final type = event['type'];
+    if (type is! String) return null;
+    final fromUser = type.startsWith('user/');
+    final isAssistant = type.startsWith('assistant/') || type.startsWith('reasoning');
+    if (!fromUser && !isAssistant) return null;
+    final text = _collectText(event['data']).trim();
+    if (text.isEmpty) return null;
+    return CodexMessage(fromUser: fromUser, text: text);
+  }
+
+  /// Only content-bearing keys are walked, so ids and roles never leak into
+  /// the text; everything under them is joined in document order.
+  static const _textKeys = ['text', 'content', 'message', 'parts', 'items', 'data'];
+
+  static String _collectText(Object? value, [int depth = 0]) {
+    if (depth > 8 || value == null) return '';
+    if (value is String) return value.trim();
+    if (value is List) {
+      final parts = value.map((item) => _collectText(item, depth + 1)).where((part) => part.isNotEmpty).toList();
+      return parts.join('\n').trim();
+    }
+    if (value is Map) {
+      final parts = <String>[];
+      for (final key in _textKeys) {
+        final part = _collectText(value[key], depth + 1);
+        if (part.isNotEmpty) parts.add(part);
+      }
+      return parts.join('\n').trim();
+    }
+    return '';
+  }
 }

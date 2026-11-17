@@ -12,3 +12,10 @@ final codexThreadsProvider = FutureProvider.autoDispose<List<CodexThread>>((ref)
   if (client == null) return const <CodexThread>[];
   return CodexClient(client.carrier).listThreads();
 });
+
+/// One thread's history on the connected Host.
+final codexHistoryProvider = FutureProvider.autoDispose.family<CodexHistory, String>((ref, threadId) async {
+  final client = ref.watch(activeConnectionProvider).value?.client;
+  if (client == null) return const CodexHistory(messages: <CodexMessage>[], hasMore: false);
+  return CodexClient(client.carrier).readHistory(threadId);
+});

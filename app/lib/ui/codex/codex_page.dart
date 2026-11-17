@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../remote/codex/codex_client.dart';
 import '../../state/codex_state.dart';
+import 'codex_thread_page.dart';
 
 /// Codex threads on the connected Host.
 ///
@@ -66,8 +67,10 @@ class _ThreadTile extends StatelessWidget {
       title: Text(thread.title, maxLines: 2, overflow: TextOverflow.ellipsis),
       subtitle: subtitle.isEmpty ? null : Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('打开线程还没实现（下一步）')),
+      onTap: () => Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => CodexThreadPage(threadId: thread.id, title: thread.title),
+        ),
       ),
     );
   }
