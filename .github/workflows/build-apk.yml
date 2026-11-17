@@ -1,0 +1,57 @@
+name: Build DSH Go APK (debug, arm64)
+
+# 鍙敤浜庤嚜寤?fork锛氭墜鍔ㄨЕ鍙戯紝缂栦竴涓彲浠ヨ鍒版墜鏈轰笂鐨?debug 鐗堟湰銆?# 涓嶆瀯寤?proot 杩愯鏃讹紙杩滅▼涓绘満妯″紡涓嬩笉闇€瑕侊級锛屾墍浠ユ瘮 release 娴佺▼杞诲緢澶氥€?
+on:
+  workflow_dispatch:
+    inputs:
+      build_name:
+        description: '鐗堟湰鍚嶏紙渚嬪 1.1.0-codex.1锛?
+        required: false
+        default: '1.1.0-codex.1'
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.7
+          channel: stable
+          cache: true
+
+      - name: flutter pub get
+        working-directory: app
+        run: flutter pub get --enforce-lockfile
+
+      - name: android/local.properties
+        working-directory: app
+        run: |
+          printf 'sdk.dir=%s\nflutter.sdk=%s\n' "$ANDROID_HOME" "$FLUTTER_ROOT" > android/local.properties
+
+      - name: Build debug APK (arm64)
+        working-directory: app
+        run: |
+          flutter build apk --debug --flavor arm64 \
+            --target-platform android-arm64 \
+            --build-name "${{ inputs.build_name }}"
+
+      - name: Show result
+        run: ls -lh app/build/app/outputs/flutter-apk/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dsh-go-debug-arm64
+          path: app/build/app/outputs/flutter-apk/app-arm64-debug.apk
+          if-no-files-found: error
+          retention-days: 14
