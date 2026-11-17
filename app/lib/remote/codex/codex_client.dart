@@ -86,6 +86,31 @@ class CodexClient {
     });
     return CodexHistory.parse(result);
   }
+
+  /// Sends a text prompt to [threadId] and starts a turn.
+  Future<void> sendText(String threadId, String text) async {
+    await _call('turn/start', <String, Object?>{
+      'threadId': threadId,
+      'input': [
+        {'type': 'text', 'text': text},
+      ],
+    });
+  }
+
+  /// Stops the running turn.
+  Future<void> interrupt(String threadId, String turnId) =>
+      _call('turn/interrupt', <String, Object?>{'threadId': threadId, 'turnId': turnId});
+
+  /// Branches [threadId] into a new thread that keeps its earlier turns.
+  Future<String?> fork(String threadId) async {
+    final result = await _call('thread/fork', <String, Object?>{'threadId': threadId});
+    if (result is Map) {
+      final thread = result['thread'];
+      if (thread is Map && thread['id'] is String) return thread['id'] as String;
+      if (result['id'] is String) return result['id'] as String;
+    }
+    return null;
+  }
 }
 
 /// One readable line of a thread.
