@@ -2479,7 +2479,8 @@
       "fork-default-effort.diff",
       "config-editor-lock-order.diff",
       "piai-overflow-output-limit.diff",
-      "schedule-authorization-availability.diff"
+      "schedule-authorization-availability.diff",
+      "deepseek-refusal.diff"
     ],
     "ohos": [
       "cordis-effect-dispose-completion.diff",
@@ -2632,6 +2633,7 @@
       "config-editor-lock-order.diff",
       "piai-overflow-output-limit.diff",
       "schedule-authorization-availability.diff",
+      "deepseek-refusal.diff",
       "ohos-attachment-publication.diff",
       "ohos-attachment-diagnostic.diff",
       "ohos-hap-native-libraries.diff",
