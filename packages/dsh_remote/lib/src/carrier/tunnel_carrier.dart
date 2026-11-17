@@ -492,6 +492,15 @@ class RemoteTunnelCarrier extends DshCarrier implements WorkspaceUploadCarrier {
     return result;
   }
 
+  /// Codex domain: the Host answers `codex.app.call` with `{method, params}`
+  /// on the same encrypted session, outside the Harness endpoint allow-list.
+  @override
+  Future<Object?> rawCall(String method, Object? params, {Duration? timeout}) async {
+    final session = await _ensureSession();
+    _tracer?.call(DshTraceEntry('out', 'rpc', {'method': method, 'params': params}));
+    return session.rpc.call(method, params, timeout: timeout ?? callTimeout);
+  }
+
   /// Host refusals become `{ok: false}`; local deadline/loss become
   /// [DshTransportException] (the call's outcome is unknown: do not blindly
   /// retry mutations).

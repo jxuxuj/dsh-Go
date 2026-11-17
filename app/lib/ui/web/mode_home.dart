@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/l10n.dart';
 import '../../state/sessions_state.dart';
 import '../../state/ui_mode_state.dart';
+import '../codex/codex_page.dart';
 import '../modes/mode_switch.dart';
 import '../shell/home_shell.dart';
 import '../shell/page_frame.dart';
@@ -71,25 +72,27 @@ class _ModeHomeState extends ConsumerState<ModeHome> {
   }
 }
 
-/// The drawer's quiet switch to 网页模式: a round glass key the height of
-/// 新对话 beside it, with 界面's own mark (the globe at the drawer's foot
-/// opens the web page on top; this one makes it the home).
+/// The drawer's quiet switch to the Codex backend, in the slot the 网页模式
+/// key used to occupy. The web page stays reachable from everywhere else that
+/// opens it (share links, launcher entries); only this key changed meaning.
 class WebModeKey extends ConsumerWidget {
   const WebModeKey({super.key, this.size = 36, this.tier = GlassTier.chrome});
 
   final double size;
   final GlassTier tier;
 
-  static String get tooltip => appL10n.webSwitchToWeb;
+  static String get tooltip => 'Codex';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GlassIconButton(
       icon: AppIcons.swap,
-      tooltip: context.l10n.webSwitchToWeb,
+      tooltip: tooltip,
       size: size,
       tier: tier,
-      onPressed: () => unawaited(ref.read(uiModeProvider.notifier).set(UiMode.web)),
+      onPressed: () {
+        Navigator.of(context).push<void>(MaterialPageRoute<void>(builder: (_) => const CodexPage()));
+      },
     );
   }
 }

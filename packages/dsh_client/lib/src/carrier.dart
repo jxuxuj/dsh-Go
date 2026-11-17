@@ -63,6 +63,12 @@ abstract class DshCarrier {
   /// [DshProtocolException], [DshCarrierRefusedException]).
   Future<RpcResult> call(String endpoint, Map<String, Object?> args, {Duration? timeout});
 
+  /// One unary call to a non-Harness RPC method on the same link (the Codex
+  /// domain uses `codex.app.call`). A carrier that has no such channel
+  /// rejects with [UnsupportedError]; callers must treat it as unavailable.
+  Future<Object?> rawCall(String method, Object? params, {Duration? timeout}) =>
+      Future<Object?>.error(UnsupportedError('$runtimeType has no raw RPC channel'));
+
   /// Opens a fresh physical link for [DshMux].
   ///
   /// Throw [DshHttpException] 401/403 or [DshCarrierRefusedException] when a
