@@ -16,6 +16,7 @@ import '../../runtime/runtime_bridge.dart';
 import '../../runtime/runtime_state.dart';
 import '../../runtime/local_footprint.dart';
 import '../../state/bots_state.dart';
+import '../../state/backend_state.dart';
 import '../../state/connection_state.dart';
 import '../../state/engine_control.dart';
 import '../../state/hosts_state.dart';
@@ -26,6 +27,7 @@ import '../../state/sessions_state.dart';
 import '../../state/read_list_identity.dart';
 import '../../state/workspaces_state.dart';
 import '../bots/bots_page.dart' show BotsPage, UnreadBadge;
+import '../codex/codex_drawer_list.dart';
 import '../chat/media/media_format.dart' show chatTitleShown;
 import '../common/app_sheet.dart';
 import '../common/empty_view.dart';
@@ -466,6 +468,12 @@ class _SessionList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // The drawer speaks to whichever backend is selected. Codex draws its own
+    // workspaces and threads with the same row widgets, so only the data
+    // source changes.
+    if (ref.watch(backendProvider) == ChatBackend.codex) {
+      return CodexDrawerList(onClose: onClose);
+    }
     final l10n = context.l10n;
     final sessions = ref.watch(sessionsProvider);
     final identity = ref.watch(readListIdentityProvider);

@@ -10,9 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n.dart';
+import '../../state/backend_state.dart';
 import '../../state/sessions_state.dart';
 import '../../state/ui_mode_state.dart';
-import '../codex/codex_page.dart';
 import '../modes/mode_switch.dart';
 import '../shell/home_shell.dart';
 import '../shell/page_frame.dart';
@@ -85,14 +85,13 @@ class WebModeKey extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final backend = ref.watch(backendProvider);
     return GlassIconButton(
       icon: AppIcons.swap,
-      tooltip: tooltip,
+      tooltip: backend == ChatBackend.codex ? '切换到 DeepSeek' : '切换到 Codex',
       size: size,
       tier: tier,
-      onPressed: () {
-        Navigator.of(context).push<void>(MaterialPageRoute<void>(builder: (_) => const CodexPage()));
-      },
+      onPressed: () => ref.read(backendProvider.notifier).toggle(),
     );
   }
 }

@@ -6,13 +6,14 @@ import 'package:dsh_client/dsh_client.dart';
 /// missing field means the Host did not have it — never guess a default that
 /// looks like real content.
 class CodexThread {
-  const CodexThread({required this.id, this.name, this.preview, this.cwd, this.updatedAt});
+  const CodexThread({required this.id, this.name, this.preview, this.cwd, this.updatedAt, this.projectId});
 
   final String id;
   final String? name;
   final String? preview;
   final String? cwd;
   final int? updatedAt;
+  final String? projectId;
 
   /// A title worth showing: the user's name, else the first line of the
   /// preview, else the id so an entry is never blank.
@@ -40,10 +41,45 @@ class CodexThread {
           preview: item['preview'] as String?,
           cwd: item['cwd'] as String?,
           updatedAt: item['updatedAt'] is num ? (item['updatedAt'] as num).toInt() : null,
+          projectId: item['projectId'] as String?,
         ),
       );
     }
     return threads;
+  }
+}
+
+/// One Codex project (the Host's "workspace") and the directories it covers.
+class CodexProject {
+  const CodexProject({required this.id, required this.name, this.root});
+
+  final String id;
+  final String name;
+  final String? root;
+
+  static List<CodexProject> parseList(Object? result) {
+    if (result is! Map) return const <CodexProject>[];
+    final data = result['data'];
+    if (data is! List) return const <CodexProject>[];
+    final projects = <CodexProject>[];
+    for (final item in data) {
+      if (item is! Map) continue;
+      final id = item['id'];
+      final name = item['name'];
+      if (id is! String || name is! String) continue;
+      String? root;
+      final roots = item['roots'];
+      if (roots is List) {
+        for (final entry in roots) {
+          if (entry is Map && entry['path'] is String) {
+            root = entry['path'] as String;
+            break;
+          }
+        }
+      }
+      projects.add(CodexProject(id: id, name: name, root: root));
+    }
+    return projects;
   }
 }
 
@@ -59,6 +95,12 @@ class CodexClient {
 
   Future<Object?> _call(String method, Map<String, Object?> params) =>
       carrier.rawCall('codex.app.call', <String, Object?>{'method': method, 'params': params});
+
+  /// Codex projects (the Host's workspaces).
+  Future<List<CodexProject>> listProjects({int limit = 100}) async {
+    final result = await _call('project/list', <String, Object?>{'limit': limit});
+    return CodexProject.parseList(result);
+  }
 
   /// Codex threads, newest first by default.
   Future<List<CodexThread>> listThreads({int limit = 50, bool archived = false, String? searchTerm}) async {
